@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WildCraft SMP</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0b0f1a;
+  color:white;
+}
+
+.bg{
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:url('https://images.unsplash.com/photo-1604079628040-94301bb21b91?auto=format&fit=crop&w=1600&q=80') center/cover;
+  filter:brightness(0.4);
+  z-index:-2;
+}
+
+.hero{
+  text-align:center;
+  padding:120px 20px;
+}
+
+.hero h1{font-size:55px;}
+
+#mainCountdown{
+  font-size:28px;
+  color:#6cf;
+}
+
+.btn{
+  padding:12px 25px;
+  margin:10px;
+  border-radius:10px;
+  text-decoration:none;
+  display:inline-block;
+  font-weight:bold;
+}
+
+.green{background:#4caf50;color:white;}
+.blue{background:#5865F2;color:white;}
+
+/* ADMIN */
+#adminPanel{
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.95);
+  padding:30px;
+  z-index:999;
+}
+
+input{
+  padding:10px;
+  margin:5px;
+  border-radius:8px;
+  border:none;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.red{background:red;color:white;}
+
+/* CONFETTI */
+.confetti{
+  position:fixed;
+  width:10px;
+  height:10px;
+  top:-10px;
+  animation:fall 3s linear forwards;
+}
+
+@keyframes fall{
+  to{transform:translateY(110vh) rotate(360deg);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg"></div>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>WildCraft SMP</h1>
+
+  <h2>🔥 Launch Countdown</h2>
+  <h1 id="mainCountdown">Loading...</h1>
+
+  <a id="joinBtn" class="btn green" href="https://bloxd.io/play/classic/wildcraft.smp" style="display:none;">
+    Join Server
+  </a>
+
+  <a id="discordBtn" class="btn blue" href="https://discord.gg/W4uhD5mZAh" target="_blank" style="display:none;">
+    💬 Join Discord
+  </a>
+</div>
+
+<!-- ADMIN -->
+<div id="adminPanel">
+  <h2>Admin Panel</h2>
+
+  <input type="password" id="pass" placeholder="Password">
+  <button onclick="login()">Login</button>
+
+  <br><br>
+
+  <input type="datetime-local" id="newDate">
+  <button onclick="setDate()">Set Launch Date</button>
+
+  <br><br>
+
+  <button onclick="closeAdmin()">Close</button>
+</div>
+
+<!-- SOUND -->
+<audio id="boomSound">
+  <source src="https://www.soundjay.com/buttons/sounds/button-29.mp3">
+</audio>
+
+<script>
+
+const ADMIN_PASSWORD = "wildcraft123";
+
+/* ================= DISCORD WEBHOOK ================= */
+const WEBHOOK_URL = "YOUR_WEBHOOK_URL_HERE";
+
+/* 🔔 DISCOHOOK-STYLE LAUNCH EMBED */
+function sendLaunchEmbed(){
+  fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      embeds: [
+        {
+          title: "🚀 WildCraft SMP IS LIVE!",
+          description: "The server has officially launched!\n\n👉 Join now: https://bloxd.io/play/classic/wildcraft.smp",
+          color: 5814783,
+          fields: [
+            {
+              name: "🔥 Status",
+              value: "LIVE NOW",
+              inline: true
+            },
+            {
+              name: "🌍 Server",
+              value: "WildCraft SMP",
+              inline: true
+            }
+          ]
+        }
+      ]
+    })
+  });
+}
+
+/* ================= SYNC COUNTDOWN ================= */
+let launch = null;
+let launched = false;
+
+async function loadConfig(){
+  let res = await fetch("config.json");
+  launch = await res.json();
+}
+
+function getLaunchTime(){
+  return new Date(
+    launch.year,
+    launch.month-1,
+    launch.day,
+    launch.hour,
+    launch.minute
+  ).getTime();
+}
+
+function updateCountdown(){
+
+  if(!launch) return;
+
+  let now = Date.now();
+  let diff = getLaunchTime() - now;
+
+  let el = document.getElementById("mainCountdown");
+  let btn = document.getElementById("joinBtn");
+
+  if(diff <= 0){
+
+    if(!launched){
+      launched = true;
+
+      el.innerText = "🚀 LIVE NOW!";
+      btn.style.display = "inline-block";
+
+      document.getElementById("discordBtn").style.display = "inline-block";
+
+      /* 🔔 DISCORD EMBED */
+      sendLaunchEmbed();
+
+      /* 🔊 SOUND */
+      document.getElementById("boomSound").play();
+
+      /* 🎆 CONFETTI */
+      for(let i=0;i<80;i++){
+        let c=document.createElement("div");
+        c.className="confetti";
+        c.style.left=Math.random()*100+"vw";
+        c.style.background=["red","blue","yellow","green"][Math.floor(Math.random()*4)];
+        c.style.animationDuration=(2+Math.random()*2)+"s";
+        document.body.appendChild(c);
+      }
+
+      /* 🌍 AUTO REDIRECT */
+      setTimeout(()=>{
+        window.location.href="https://bloxd.io/play/classic/wildcraft.smp";
+      },5000);
+    }
+
+    return;
+  }
+
+  let s=Math.floor(diff/1000);
+  let m=Math.floor(s/60);
+  let h=Math.floor(m/60);
+  let d=Math.floor(h/24);
+
+  el.innerText=`${d}d ${h%24}h ${m%60}m ${s%60}s`;
+}
+
+setInterval(updateCountdown,1000);
+
+/* ================= ADMIN ================= */
+function login(){
+  let p=document.getElementById("pass").value;
+  if(p===ADMIN_PASSWORD){
+    alert("Admin logged in ✔");
+  }
+}
+
+function closeAdmin(){
+  document.getElementById("adminPanel").style.display="none";
+}
+
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="a"){
+    document.getElementById("adminPanel").style.display="block";
+  }
+});
+
+function setDate(){
+  let val=document.getElementById("newDate").value;
+  let d=new Date(val);
+
+  launch={
+    year:d.getFullYear(),
+    month:d.getMonth()+1,
+    day:d.getDate(),
+    hour:d.getHours(),
+    minute:d.getMinutes()
+  };
+
+  alert("Launch date updated ✔");
+}
+
+/* ================= START ================= */
+loadConfig();
+setInterval(loadConfig,60000);
+
+</script>
+
+</body>
+</html>
